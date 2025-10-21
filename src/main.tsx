@@ -24,9 +24,8 @@ import OrderPage from './components/OrderPage.tsx'
 import ProductDetail from './components/ProductDetail.tsx'
 import VerifyEmail from './components/VerifyEmail.tsx'
 
-const basename = "userside"
 createRoot(document.getElementById('root')!).render(
-  <BrowserRouter basename={basename}>
+  <BrowserRouter>
   <AuthProvider>
     
    <Routes>
