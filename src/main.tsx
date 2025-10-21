@@ -22,6 +22,7 @@ import MyBookings from './components/MyBookings.tsx'
 import BookingConfirmation from './components/BookingConfirmation.tsx'
 import OrderPage from './components/OrderPage.tsx'
 import ProductDetail from './components/ProductDetail.tsx'
+import VerifyEmail from './components/VerifyEmail.tsx'
 
 const basename = "userside"
 createRoot(document.getElementById('root')!).render(
@@ -31,6 +32,7 @@ createRoot(document.getElementById('root')!).render(
    <Routes>
   <Route path="/" element={<App />} />
   <Route path="/login" element={<Login />} />
+  <Route path="/verify-email" element={<VerifyEmail />} />
   <Route path="/register" element={<Register />} />
 
   {/* Public browse pages */}
