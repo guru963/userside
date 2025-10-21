@@ -23,9 +23,9 @@ import BookingConfirmation from './components/BookingConfirmation.tsx'
 import OrderPage from './components/OrderPage.tsx'
 import ProductDetail from './components/ProductDetail.tsx'
 
-
+const basename = "userside"
 createRoot(document.getElementById('root')!).render(
-  <BrowserRouter>
+  <BrowserRouter basename={basename}>
   <AuthProvider>
     
    <Routes>
