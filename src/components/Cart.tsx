@@ -20,8 +20,6 @@ export type Product = {
 type CartItem = { id: string; qty: number; product: Product };
 
 const money = (n: number) => `₹${n.toLocaleString("en-IN")}`;
-
-// Prefer image_url; fallback to image; finally a placeholder
 const getImage = (p: Product) => p.image_url || p.image || PLACEHOLDER;
 
 const CartPage: React.FC = () => {
@@ -48,11 +46,8 @@ const CartPage: React.FC = () => {
       });
 
       setCart(migrated);
-
-      // Optional: write the migrated shape back so future reads are clean
       localStorage.setItem("cart", JSON.stringify(migrated));
     } catch {
-      // If parsing fails, clear broken cart
       localStorage.removeItem("cart");
     }
   }, []);
@@ -99,56 +94,139 @@ const CartPage: React.FC = () => {
     setCart((prev) => prev.filter((it) => it.id !== id));
   const clearAll = () => setCart([]);
 
+  // ===== Mobile: sticky bar visibility (hide when cart empty) =====
+  const hasItems = cart.length > 0;
+
   return (
-    <div>
+    <div className="relative">
       <Navbar />
 
       <div className="min-h-screen bg-[#FAF7F2] text-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 lg:pb-8">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-              <Link
-                to="/collections"
-                className="flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5" />
-                <span className="font-medium">Continue Shopping</span>
-              </Link>
-            </div>
+          <div className="flex items-center justify-between mb-6 lg:mb-8">
+            <Link
+              to="/collections"
+              className="flex items-center gap-2 text-gray-700 hover:text-orange-600 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span className="font-medium hidden sm:inline">Continue Shopping</span>
+              <span className="font-medium sm:hidden">Back</span>
+            </Link>
+
             <div className="text-center">
-              <h1 className="text-3xl font-bold text-orange-600">Shopping Cart</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-orange-600">Shopping Cart</h1>
+              <p className="text-gray-600 mt-1 text-sm sm:text-base">
                 {cart.length} {cart.length === 1 ? "item" : "items"}
               </p>
             </div>
-            <div className="w-24" />
+
+            <div className="w-16 sm:w-24" />
           </div>
 
           {cart.length === 0 ? (
             /* Empty State */
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-orange-50 flex items-center justify-center">
-                <ShoppingBag className="h-12 w-12 text-orange-400" />
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 sm:p-12 text-center">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-6 rounded-full bg-orange-50 flex items-center justify-center">
+                <ShoppingBag className="h-10 w-10 sm:h-12 sm:w-12 text-orange-400" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
                 Your cart is empty
               </h2>
-              <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                Looks like you haven't added any items to your cart yet. Start
-                shopping to find amazing products!
+              <p className="text-gray-600 mb-6 sm:mb-8 max-w-md mx-auto text-sm sm:text-base">
+                Looks like you haven&apos;t added any items yet. Start shopping to find amazing products!
               </p>
               <Link
                 to="/collections"
-                className="inline-flex items-center justify-center rounded-xl px-8 py-3 font-semibold text-white bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 transition-all shadow-lg hover:shadow-xl"
+                className="inline-flex items-center justify-center rounded-xl px-6 sm:px-8 py-3 font-semibold text-white bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 transition-all shadow-lg hover:shadow-xl"
               >
                 Start Shopping
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Cart Items - 2/3 width on desktop */}
-              <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+              {/* ===== Mobile layout (cards) ===== */}
+              <div className="lg:hidden">
+                <div className="space-y-4">
+                  {cart.map((item) => {
+                    const { product, qty } = item;
+                    const unit = product.price_inr;
+                    const total = unit * qty;
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4"
+                      >
+                        <div className="flex gap-3">
+                          <div className="w-24 h-24 rounded-xl border border-gray-200 overflow-hidden flex-shrink-0">
+                            <img
+                              src={getImage(product)}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src = PLACEHOLDER;
+                              }}
+                            />
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">
+                              {product.name}
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {product.collection}
+                            </p>
+
+                            <div className="mt-2 flex items-center justify-between">
+                              <span className="text-base font-bold text-orange-600">
+                                {money(total)}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {money(unit)} each
+                              </span>
+                            </div>
+
+                            {/* Quantity + Remove */}
+                            <div className="mt-3 flex items-center justify-between">
+                              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                                <button
+                                  onClick={() => decrement(product)}
+                                  className="w-11 h-11 flex items-center justify-center text-gray-700 active:scale-95 transition"
+                                  aria-label="Decrease quantity"
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </button>
+                                <span className="w-12 h-11 flex items-center justify-center text-sm font-semibold bg-white border-x border-gray-300">
+                                  {qty}
+                                </span>
+                                <button
+                                  onClick={() => increment(product)}
+                                  className="w-11 h-11 flex items-center justify-center text-gray-700 active:scale-95 transition"
+                                  aria-label="Increase quantity"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </button>
+                              </div>
+
+                              <button
+                                onClick={() => removeItem(item.id)}
+                                className="p-2.5 text-gray-500 hover:text-red-500 transition rounded-lg hover:bg-red-50"
+                                aria-label="Remove item"
+                              >
+                                <Trash2 className="h-5 w-5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ===== Desktop layout (unchanged) ===== */}
+              <div className="hidden lg:block lg:col-span-2">
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                   {/* Table Header */}
                   <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
@@ -242,14 +320,13 @@ const CartPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Order Summary - 1/3 width on desktop */}
+              {/* Order Summary */}
               <div className="lg:col-span-1">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sticky top-8">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sticky top-8 hidden lg:block">
                   <h2 className="text-xl font-bold text-gray-900 mb-6">
                     Order Summary
                   </h2>
 
-                  {/* Summary Details */}
                   <div className="space-y-4 mb-6">
                     <div className="flex justify-between items-center text-gray-700">
                       <span>Subtotal ({cart.length} items)</span>
@@ -261,21 +338,16 @@ const CartPage: React.FC = () => {
                     </div>
                     <div className="flex justify-between items-center text-gray-700">
                       <span>Tax</span>
-                      <span className="font-semibold">
-                        Calculated at checkout
-                      </span>
+                      <span className="font-semibold">Calculated at checkout</span>
                     </div>
                     <div className="border-t border-gray-200 pt-4">
                       <div className="flex justify-between items-center text-lg font-bold text-gray-900">
                         <span>Total</span>
-                        <span className="text-orange-600">
-                          {money(subtotal)}
-                        </span>
+                        <span className="text-orange-600">{money(subtotal)}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
                   <div className="space-y-3">
                     <Link
                       to="/checkout"
@@ -291,7 +363,6 @@ const CartPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Continue Shopping */}
                   <div className="mt-6 pt-6 border-t border-gray-200 text-center">
                     <Link
                       to="/collections"
@@ -305,6 +376,26 @@ const CartPage: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* ===== Mobile Sticky Bottom Summary & CTA ===== */}
+        {hasItems && (
+          <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/75">
+            <div className="max-w-7xl mx-auto px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500">Subtotal</p>
+                  <p className="text-lg font-bold text-gray-900">{money(subtotal)}</p>
+                </div>
+                <Link
+                  to="/checkout"
+                  className="inline-flex items-center justify-center px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 active:scale-95 transition"
+                >
+                  Proceed to Checkout
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

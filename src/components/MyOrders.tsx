@@ -30,7 +30,6 @@ type OrderItemRow = {
   name_snapshot: string
   price_inr: number
   qty: number
-  // we now have a nested product from the join in getMyOrders()
   product?: { id: string; image_url?: string | null } | null
 }
 
@@ -251,7 +250,7 @@ export default function MyOrders() {
     const allItemIds = orders.flatMap(o => o.order_items.map(i => i.id))
     if (!allItemIds.length) return
     const { data: caps } = await supabase
-      .from('returnable_items_v') // optional view
+      .from('returnable_items_v')
       .select('order_item_id, already_returned_qty, remaining_qty')
       .in('order_item_id', allItemIds)
     if (!caps) return
@@ -262,8 +261,11 @@ export default function MyOrders() {
 
   // ---- Misc helpers
   const toggle = (id: string) => setOpen(p => ({ ...p, [id]: !p[id] }))
-  const formatDate = (s: string) => new Date(s).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-  const formatDateTime = (s: string) => new Date(s).toLocaleString('en-IN')
+
+  const formatDate = (s: string) =>
+    new Date(s).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+  const formatDateTime = (s: string) =>
+    new Date(s).toLocaleString('en-IN')
 
   const copyAwb = async (order: OrderRow) => {
     const label = order.courier_name || order.carrier || 'Carrier'
@@ -299,17 +301,16 @@ export default function MyOrders() {
     return 'rejected_only'
   }
 
-  // CTA for return
   const getReturnCTA = (order: OrderRow) => {
     const inWindow = withinReturnWindow(order)
     const remainQty = remainingQtyForOrder(order)
     const agg = getOrderReturnAggregate(order.id)
 
-    if (!inWindow)  return { disabled: true,  label: 'Return Window Closed', tooltip: `Returns allowed within ${RETURN_WINDOW_DAYS} days of delivery`, variant: 'disabled' as const }
-    if (remainQty <= 0) return { disabled: true,  label: 'Already Returned',   tooltip: 'All items are already returned', variant: 'disabled' as const }
-    if (agg === 'open') return { disabled: true,  label: 'Return In Progress',  tooltip: 'Your return request is being processed', variant: 'in_progress' as const }
-    if (agg === 'completed') return { disabled: true,  label: 'Return Completed', tooltip: 'A return has already been completed for this order', variant: 'completed' as const }
-    return { disabled: false, label: 'Return or Replace Items', tooltip: `Eligible within ${RETURN_WINDOW_DAYS} days of delivery`, variant: 'active' as const }
+    if (!inWindow)  return { disabled: true,  label: 'Return Window Closed', tooltip: `Returns within ${RETURN_WINDOW_DAYS} days of delivery`, variant: 'disabled' as const }
+    if (remainQty <= 0) return { disabled: true,  label: 'Already Returned',   tooltip: 'All items already returned', variant: 'disabled' as const }
+    if (agg === 'open') return { disabled: true,  label: 'Return In Progress',  tooltip: 'Return request is being processed', variant: 'in_progress' as const }
+    if (agg === 'completed') return { disabled: true,  label: 'Return Completed', tooltip: 'A return has already been completed', variant: 'completed' as const }
+    return { disabled: false, label: 'Return or Replace Items', tooltip: `Eligible within ${RETURN_WINDOW_DAYS} days`, variant: 'active' as const }
   }
 
   const startReturnFor = (order: OrderRow) => {
@@ -319,7 +320,7 @@ export default function MyOrders() {
     const lines: ReturnLineDraft[] = order.order_items.map(it => {
       const cap = capsByItem[it.id]?.remaining_qty
       const maxRemain = typeof cap === 'number' ? cap : it.qty
-      console.log({ it, cap, maxRemain })
+      console.log(maxRemain);
       return {
         order_item_id: it.id,
         product_id: it.product_id,
@@ -346,8 +347,8 @@ export default function MyOrders() {
     const config = statusConfig[status]
     const Icon = config.icon
     return (
-      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${config.color}`}>
-        <Icon className="h-3 w-3" />
+      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-medium border ${config.color}`}>
+        <Icon className="h-3.5 w-3.5" />
         {config.label}
       </span>
     )
@@ -375,8 +376,8 @@ export default function MyOrders() {
       rejected: 'Return Rejected',
     }
     return (
-      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${styles[status]}`}>
-        <RotateCcw className="h-3 w-3" />
+      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-medium border ${styles[status]}`}>
+        <RotateCcw className="h-3.5 w-3.5" />
         {labels[status]}
       </span>
     )
@@ -443,14 +444,14 @@ export default function MyOrders() {
               <Truck className={`h-4 w-4 ${textColor}`} />
               <div className={`text-sm font-semibold ${textColor}`}>{trackingData.label}</div>
             </div>
-            <div className="space-y-1">
-              <div className="text-sm"><span className="font-medium">Carrier:</span> {trackingData.carrier || 'Not specified'}</div>
-              {trackingData.number && (<div className="text-sm"><span className="font-medium">Tracking #:</span> {trackingData.number}</div>)}
-              {trackingData.shippedAt && (<div className="text-sm"><span className="font-medium">Shipped:</span> {formatDateTime(trackingData.shippedAt)}</div>)}
-              {!isReplacement && order.delivered_at && (<div className="text-sm"><span className="font-medium">Delivered:</span> {formatDateTime(order.delivered_at)}</div>)}
+            <div className="space-y-1 text-sm">
+              <div><span className="font-medium">Carrier:</span> {trackingData.carrier || 'Not specified'}</div>
+              {trackingData.number && (<div><span className="font-medium">Tracking #:</span> {trackingData.number}</div>)}
+              {trackingData.shippedAt && (<div><span className="font-medium">Shipped:</span> {formatDateTime(trackingData.shippedAt)}</div>)}
+              {!isReplacement && order.delivered_at && (<div><span className="font-medium">Delivered:</span> {formatDateTime(order.delivered_at)}</div>)}
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <ActionButton variant="outline" onClick={() => copyAwb(order)} size="sm">
               {copiedId === order.id ? <Check className="h-3 w-3" /> : <ClipboardCopy className="h-3 w-3" />}
               {copiedId === order.id ? 'Copied' : 'Copy'}
@@ -471,24 +472,24 @@ export default function MyOrders() {
     const returnList = returnsByOrder[order.id] || []
 
     return (
-      <div className="bg-white border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white border rounded-lg p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div>
-            <h4 className="font-semibold text-gray-900 text-lg">Returns & Refunds</h4>
-            <p className="text-sm text-gray-500 mt-1">Manage your returns and replacements</p>
+            <h4 className="font-semibold text-gray-900 text-base sm:text-lg">Returns & Refunds</h4>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Manage your returns and replacements</p>
           </div>
-        {returnList.length > 0 && (
-          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-            {returnList.length} request{returnList.length > 1 ? 's' : ''}
-          </span>
-        )}
+          {returnList.length > 0 && (
+            <span className="text-[10px] sm:text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              {returnList.length} request{returnList.length > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
 
         {returnList.length === 0 ? (
           <div className="text-center py-6">
-            <RotateCcw className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 text-sm mb-4">No return requests for this order</p>
-            <ActionButton variant="outline" onClick={() => startReturnFor(order)} disabled={cta.disabled}>
+            <RotateCcw className="h-10 w-10 sm:h-12 sm:w-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 text-sm mb-3">No return requests for this order</p>
+            <ActionButton variant="outline" onClick={() => startReturnFor(order)} disabled={cta.disabled} size="sm">
               <Undo2 className="h-4 w-4" />
               {cta.label}
             </ActionButton>
@@ -498,12 +499,12 @@ export default function MyOrders() {
           <div className="space-y-4">
             {returnList.map(R => (
               <div key={R.header.id} className="border rounded-lg p-4 hover:border-gray-300 transition-colors">
-                <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <div className="font-semibold text-gray-900">
+                    <div className="font-semibold text-gray-900 text-sm sm:text-base">
                       Return #{R.header.rma_code || R.header.id.slice(0, 8).toUpperCase()}
                     </div>
-                    <div className="text-sm text-gray-500 mt-1">
+                    <div className="text-xs sm:text-sm text-gray-500 mt-1">
                       Created on {formatDateTime(R.header.created_at)}
                     </div>
                   </div>
@@ -515,16 +516,16 @@ export default function MyOrders() {
                     <div className="font-medium text-gray-900 text-sm mb-2">Items Returning</div>
                     <div className="space-y-2">
                       {R.lines.map(li => (
-                        <div key={li.id} className="flex items-center justify-between text-sm">
-                          <div className="flex-1">
-                            <span className="font-medium text-gray-900">{li.name_snapshot || 'Item'}</span>
+                        <div key={li.id} className="flex items-center justify-between text-xs sm:text-sm">
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium text-gray-900 truncate">{li.name_snapshot || 'Item'}</span>
                             <span className="text-gray-500 ml-2">× {li.qty}</span>
                             {li.reason_code && (
                               <span className="text-gray-500 ml-2">• {li.reason_code.replace(/_/g, ' ')}</span>
                             )}
                           </div>
                           {li.evidence_images?.length && (
-                            <div className="flex gap-1">
+                            <div className="flex gap-1 shrink-0">
                               {li.evidence_images.map((url, i) => (
                                 <a key={i} href={url} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline">
                                   Photo {i + 1}
@@ -538,7 +539,7 @@ export default function MyOrders() {
                   </div>
 
                   {R.header.notes && (
-                    <div className="bg-gray-50 p-3 rounded text-sm">
+                    <div className="bg-gray-50 p-3 rounded text-xs sm:text-sm">
                       <div className="font-medium text-gray-700 mb-1">Your Note:</div>
                       <div className="text-gray-600">{R.header.notes}</div>
                     </div>
@@ -548,7 +549,7 @@ export default function MyOrders() {
             ))}
 
             {cta.variant === 'active' && (
-              <ActionButton variant="outline" onClick={() => startReturnFor(order)} className="w-full">
+              <ActionButton variant="outline" onClick={() => startReturnFor(order)} className="w-full" size="sm">
                 <Undo2 className="h-4 w-4" />
                 Request Another Return
               </ActionButton>
@@ -575,7 +576,6 @@ export default function MyOrders() {
     setDraft(d => ({ ...d, submitting: true, error: null, successId: null }))
 
     try {
-      // 1) create return
       const { data: retIns, error: retErr } = await supabase
         .from('returns')
         .insert([{
@@ -592,7 +592,6 @@ export default function MyOrders() {
       const returnId = retIns.id as string
       const rmaCode = (retIns as any).rma_code as string | undefined
 
-      // 2) lines
       const orderForDraft = rows.find(o => o.id === draft.openForOrderId)
       const linesToInsert = draft.lines
         .map(l => {
@@ -617,7 +616,6 @@ export default function MyOrders() {
       const { error: liErr } = await supabase.from('return_items').insert(linesToInsert)
       if (liErr) throw liErr
 
-      // 3) upload images
       for (const ln of draft.lines) {
         if (!ln.qty || !ln.images.length) continue
         const { data: retItemRow, error: fetchLineErr } = await supabase
@@ -681,16 +679,16 @@ export default function MyOrders() {
   console.log(resolutions);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Orders</h1>
-              <p className="text-gray-600 mt-2">Track, manage, and return your orders</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Orders</h1>
+              <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Track, manage, and return your orders</p>
             </div>
-            <div className="flex items-center gap-4 text-sm text-gray-500">
+            <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
               <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border">
                 <Shield className="h-4 w-4 text-green-600" />
                 <span>Easy Returns</span>
@@ -705,7 +703,7 @@ export default function MyOrders() {
 
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-sm border mb-6">
-          <div className="flex border-b">
+          <div className="flex border-b overflow-x-auto scrollbar-none">
             {[
               { id: 'all', label: 'All Orders', count: rows.length },
               { id: 'processing', label: 'Processing', count: rows.filter(o => ['pending','paid','processing','shipped'].includes(o.status)).length },
@@ -715,7 +713,7 @@ export default function MyOrders() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex-1 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex-1 sm:flex-none px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-orange-500 text-orange-600 bg-orange-50'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
@@ -723,7 +721,7 @@ export default function MyOrders() {
               >
                 <div className="flex items-center gap-2 justify-center">
                   {tab.label}
-                  <span className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs min-w-6">
+                  <span className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs min-w-6 text-center">
                     {tab.count}
                   </span>
                 </div>
@@ -733,12 +731,12 @@ export default function MyOrders() {
         </div>
 
         {/* Orders List */}
-        <div className="space-y-6">
+        <div className="space-y-5 sm:space-y-6">
           {filteredOrders.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-xl shadow-sm border">
-              <Package className="h-20 w-20 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg mb-2">No orders found</p>
-              <p className="text-gray-400 text-sm">Your {activeTab !== 'all' ? activeTab : ''} orders will appear here</p>
+            <div className="text-center py-12 sm:py-16 bg-white rounded-xl shadow-sm border">
+              <Package className="h-16 w-16 sm:h-20 sm:w-20 text-gray-300 mx-auto mb-3 sm:mb-4" />
+              <p className="text-gray-500 text-base sm:text-lg mb-1 sm:mb-2">No orders found</p>
+              <p className="text-gray-400 text-xs sm:text-sm">Your {activeTab !== 'all' ? activeTab : ''} orders will appear here</p>
             </div>
           ) : (
             filteredOrders.map(order => {
@@ -749,41 +747,45 @@ export default function MyOrders() {
               return (
                 <div key={order.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                   {/* Order Header */}
-                  <div className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
+                  <div className="p-4 sm:p-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex items-start gap-3 sm:gap-4">
                         <button
                           onClick={() => toggle(order.id)}
-                          className={`p-2 rounded-lg transition-all ${isOpen ? 'bg-orange-100 text-orange-600' : 'hover:bg-gray-100 text-gray-600'}`}
+                          className={`p-2 rounded-lg transition-all shrink-0 ${isOpen ? 'bg-orange-100 text-orange-600' : 'hover:bg-gray-100 text-gray-600'}`}
+                          aria-expanded={isOpen}
+                          aria-controls={`order-${order.id}`}
                         >
                           <ChevronDown className={`h-5 w-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                         </button>
 
-                        <div>
-                          <div className="flex items-center gap-3 mb-1">
-                            <h3 className="font-semibold text-gray-900 text-lg">Order #{order.id.slice(-8)}</h3>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-gray-900 text-base sm:text-lg truncate">
+                              Order #{order.id.slice(-8)}
+                            </h3>
                             <OrderStatusBadge status={order.status} />
                           </div>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-xs sm:text-sm text-gray-500">
                             Placed on {formatDate(order.created_at)} • {order.order_items.length} item{order.order_items.length !== 1 ? 's' : ''} • Total {money(order.total_inr)}
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
                         <ActionButton
                           variant={cta.variant === 'active' ? 'outline' : 'secondary'}
                           onClick={() => startReturnFor(order)}
                           disabled={cta.disabled}
-                          size="md"
+                          size="sm"
                         >
                           <Undo2 className="h-4 w-4" />
                           {cta.label}
                         </ActionButton>
 
                         <div className="text-right">
-                          <div className="text-xl font-bold text-gray-900">{money(order.total_inr)}</div>
-                          <button onClick={() => toggle(order.id)} className="text-sm text-orange-600 hover:text-orange-700 font-medium">
+                          <div className="text-lg sm:text-xl font-bold text-gray-900">{money(order.total_inr)}</div>
+                          <button onClick={() => toggle(order.id)} className="text-xs sm:text-sm text-orange-600 hover:text-orange-700 font-medium">
                             {isOpen ? 'Hide details' : 'View details'}
                           </button>
                         </div>
@@ -793,22 +795,63 @@ export default function MyOrders() {
 
                   {/* Order Details */}
                   {isOpen && (
-                    <div className="border-t border-gray-200 bg-gray-50 p-8">
-                      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+                    <div id={`order-${order.id}`} className="border-t border-gray-200 bg-gray-50 p-4 sm:p-6">
+                      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 sm:gap-6">
                         {/* Left: Items + Summary + Tracking + Returns */}
-                        <div className="xl:col-span-3 space-y-6">
-                          {/* Order Items */}
-                          <div className="bg-white rounded-lg border border-gray-200 p-6">
-                            <h4 className="font-semibold text-gray-900 text-lg mb-4">Order Items</h4>
-                            <div className="overflow-x-auto">
-                              <table className="w-full">
+                        <div className="xl:col-span-3 space-y-4 sm:space-y-6">
+                          {/* Items */}
+                          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                            <h4 className="font-semibold text-gray-900 text-base sm:text-lg mb-3 sm:mb-4">Order Items</h4>
+
+                            {/* Mobile stacked list */}
+                            <div className="md:hidden space-y-3">
+                              {order.order_items.map(item => {
+                                const cap = capsByItem[item.id]
+                                const remaining = Math.max(0, cap?.remaining_qty ?? item.qty)
+                                return (
+                                  <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg border">
+                                    <img
+                                      src={item.product?.image_url || IMG_FALLBACK}
+                                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = IMG_FALLBACK }}
+                                      alt={item.name_snapshot}
+                                      className="w-16 h-16 rounded-md object-cover border border-gray-200 shrink-0"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                      <div className="text-sm font-medium text-gray-900 truncate">{item.name_snapshot}</div>
+                                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                                        <span>Qty: {item.qty}</span>
+                                        <span className="hidden xs:inline">•</span>
+                                        <span>Price: {money(item.price_inr)}</span>
+                                        <span className="hidden xs:inline">•</span>
+                                        <span>Total: <span className="font-semibold text-gray-900">{money(item.price_inr * item.qty)}</span></span>
+                                      </div>
+                                      <div className="mt-1">
+                                        {remaining > 0 ? (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] bg-green-50 text-green-700 border border-green-200">
+                                            {remaining} returnable
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] bg-gray-100 text-gray-600 border border-gray-200">
+                                            Not returnable
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+
+                            {/* Desktop table */}
+                            <div className="hidden md:block overflow-x-auto">
+                              <table className="w-full text-sm">
                                 <thead className="bg-gray-50">
                                   <tr>
-                                    <th className="text-left p-3 text-sm font-medium text-gray-700">Item</th>
-                                    <th className="text-center p-3 text-sm font-medium text-gray-700">Qty</th>
-                                    <th className="text-center p-3 text-sm font-medium text-gray-700">Returnable</th>
-                                    <th className="text-right p-3 text-sm font-medium text-gray-700">Price</th>
-                                    <th className="text-right p-3 text-sm font-medium text-gray-700">Total</th>
+                                    <th className="text-left p-3 font-medium text-gray-700">Item</th>
+                                    <th className="text-center p-3 font-medium text-gray-700">Qty</th>
+                                    <th className="text-center p-3 font-medium text-gray-700">Returnable</th>
+                                    <th className="text-right p-3 font-medium text-gray-700">Price</th>
+                                    <th className="text-right p-3 font-medium text-gray-700">Total</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
@@ -851,9 +894,9 @@ export default function MyOrders() {
                           </div>
 
                           {/* Order Summary */}
-                          <div className="bg-white rounded-lg border border-gray-200 p-6">
-                            <h4 className="font-semibold text-gray-900 text-lg mb-4">Order Summary</h4>
-                            <div className="space-y-3 text-sm">
+                          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                            <h4 className="font-semibold text-gray-900 text-base sm:text-lg mb-3 sm:mb-4">Order Summary</h4>
+                            <div className="space-y-2 sm:space-y-3 text-sm">
                               <div className="flex justify-between"><span className="text-gray-600">Items Total</span><span className="font-medium">{money(order.subtotal_inr)}</span></div>
                               <div className="flex justify-between"><span className="text-gray-600">Delivery</span><span className="font-medium">{money(order.shipping_inr)}</span></div>
                               <div className="border-t pt-3 flex justify-between text-base font-semibold"><span>Grand Total</span><span>{money(order.total_inr)}</span></div>
@@ -871,11 +914,11 @@ export default function MyOrders() {
                         </div>
 
                         {/* Right: Timeline & Support */}
-                        <div className="space-y-6">
-                          {/* Simple order timeline */}
-                          <div className="bg-white rounded-lg border border-gray-200 p-6">
-                            <h4 className="font-semibold text-gray-900 text-lg mb-4">Order Timeline</h4>
-                            <div className="space-y-4">
+                        <div className="space-y-4 sm:space-y-6">
+                          {/* Timeline */}
+                          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                            <h4 className="font-semibold text-gray-900 text-base sm:text-lg mb-3 sm:mb-4">Order Timeline</h4>
+                            <div className="space-y-3 sm:space-y-4">
                               {[
                                 { event: 'Order Placed', date: order.created_at, icon: Clock, status: 'completed' },
                                 ...(order.shipped_at ? [{ event: 'Shipped', date: order.shipped_at, icon: Truck, status: 'completed' }] : []),
@@ -893,9 +936,9 @@ export default function MyOrders() {
                           </div>
 
                           {/* Help */}
-                          <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
-                            <h4 className="font-semibold text-orange-900 text-lg mb-3">Need Help?</h4>
-                            <div className="space-y-3">
+                          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 sm:p-6">
+                            <h4 className="font-semibold text-orange-900 text-base sm:text-lg mb-3">Need Help?</h4>
+                            <div className="grid grid-cols-1 gap-2 sm:gap-3">
                               <button className="w-full flex items-center gap-3 p-3 bg-white rounded-lg border border-orange-200 hover:border-orange-300">
                                 <MessageCircle className="h-5 w-5 text-orange-600" />
                                 <span className="text-sm font-medium text-orange-900">Chat with Support</span>
@@ -923,15 +966,15 @@ export default function MyOrders() {
 
       {/* Return Modal */}
       {draft.openForOrderId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-4xl max-h-[92vh] overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b">
               <div className="flex items-center gap-3">
-                <Undo2 className="h-6 w-6 text-orange-600" />
+                <Undo2 className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
                 <div>
-                  <h3 className="text-xl font-semibold">Return Items</h3>
-                  <p className="text-sm text-gray-500">Select items you want to return or replace</p>
+                  <h3 className="text-lg sm:text-xl font-semibold">Return Items</h3>
+                  <p className="text-xs sm:text-sm text-gray-500">Select items you want to return or replace</p>
                 </div>
               </div>
               <button onClick={() => setDraft(emptyReturnDraft)} className="p-2 rounded-lg hover:bg-gray-100">
@@ -940,11 +983,11 @@ export default function MyOrders() {
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-auto p-6 space-y-6">
+            <div className="flex-1 overflow-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Resolution */}
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <label className="block text-sm font-medium text-orange-900 mb-3">What would you like to do?</label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 sm:p-4">
+                <label className="block text-xs sm:text-sm font-medium text-orange-900 mb-2 sm:mb-3">What would you like to do?</label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
                   {[
                     { code: 'refund', label: 'Refund', desc: 'Money back to original payment' },
                     { code: 'replacement', label: 'Replacement', desc: 'Receive a new item' },
@@ -953,14 +996,14 @@ export default function MyOrders() {
                     <button
                       key={r.code}
                       onClick={() => setDraft(d => ({ ...d, resolution: r.code as ReturnDraft['resolution'] }))}
-                      className={`p-4 rounded-lg border text-left transition-all ${
+                      className={`p-3 sm:p-4 rounded-lg border text-left transition-all ${
                         draft.resolution === r.code
                           ? 'border-orange-500 bg-white shadow-sm ring-2 ring-orange-500/20'
                           : 'border-gray-300 hover:border-gray-400 bg-white'
                       }`}
                     >
-                      <div className="font-semibold text-gray-900">{r.label}</div>
-                      <div className="text-xs text-gray-500 mt-1">{r.desc}</div>
+                      <div className="font-semibold text-gray-900 text-sm sm:text-base">{r.label}</div>
+                      <div className="text-[11px] sm:text-xs text-gray-500 mt-1">{r.desc}</div>
                     </button>
                   ))}
                 </div>
@@ -968,21 +1011,21 @@ export default function MyOrders() {
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tell us more about the issue</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Tell us more about the issue</label>
                 <textarea
                   value={draft.notes}
                   onChange={(e) => setDraft(d => ({ ...d, notes: e.target.value }))}
                   rows={3}
-                  className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  className="w-full border border-gray-300 rounded-lg p-2.5 sm:p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   placeholder="Describe the issue with the product..."
                 />
-                <p className="text-xs text-gray-500 mt-1">This helps us resolve your concern faster.</p>
+                <p className="text-[11px] sm:text-xs text-gray-500 mt-1">This helps us resolve your concern faster.</p>
               </div>
 
               {/* Lines */}
               <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-4">Select items to return</h4>
-                <div className="space-y-4">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3 sm:mb-4">Select items to return</h4>
+                <div className="space-y-3 sm:space-y-4">
                   {draft.lines.map((ln, idx) => {
                     const order = rows.find(o => o.id === draft.openForOrderId)
                     const oi = order?.order_items.find(i => i.id === ln.order_item_id)
@@ -991,7 +1034,7 @@ export default function MyOrders() {
                     const selected = ln.qty > 0
 
                     return (
-                      <div key={ln.order_item_id} className={`border rounded-xl p-4 ${maxRemain === 0 ? 'opacity-60' : ''}`}>
+                      <div key={ln.order_item_id} className={`border rounded-xl p-3 sm:p-4 ${maxRemain === 0 ? 'opacity-60' : ''}`}>
                         <div className="flex items-center gap-3 mb-3">
                           <input
                             type="checkbox"
@@ -1012,17 +1055,17 @@ export default function MyOrders() {
                             alt={oi?.name_snapshot || 'Item'}
                             className="w-10 h-10 rounded-md object-cover border border-gray-200"
                           />
-                          <div className="text-sm font-medium text-gray-900 flex-1">{oi?.name_snapshot || 'Item'}</div>
-                          <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                          <div className="text-sm font-medium text-gray-900 flex-1 min-w-0 truncate">{oi?.name_snapshot || 'Item'}</div>
+                          <div className="text-[11px] sm:text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
                             {maxRemain > 0 ? `Can return ${maxRemain}` : `Fully returned`}
                           </div>
                         </div>
 
                         {selected && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-start">
                             {/* Qty */}
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
+                              <label className="block text-[11px] sm:text-xs font-medium text-gray-600 mb-1">Quantity</label>
                               <input
                                 type="number"
                                 min={1}
@@ -1038,10 +1081,10 @@ export default function MyOrders() {
 
                             {/* Reason */}
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Reason for return</label>
+                              <label className="block text-[11px] sm:text-xs font-medium text-gray-600 mb-1">Reason for return</label>
                               <select
                                 value={ln.reason_code}
-                                onChange={(e) => setDraft(d => ({ ...d, lines: d.lines.map((l, i) => i === idx ? { ...l, reason_code: e.target.value } : l) }))}
+                                onChange={(e) => setDraft(d => ({ ...d, lines: d.lines.map((l, i) => i === idx ? { ...l, reason_code: e.target.value } : l) })) }
                                 className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               >
                                 {reasons.map(r => <option key={r.code} value={r.code}>{r.label}</option>)}
@@ -1050,10 +1093,10 @@ export default function MyOrders() {
 
                             {/* Condition */}
                             <div className="lg:col-span-2">
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Condition details</label>
+                              <label className="block text-[11px] sm:text-xs font-medium text-gray-600 mb-1">Condition details</label>
                               <input
                                 value={ln.condition_note || ''}
-                                onChange={(e) => setDraft(d => ({ ...d, lines: d.lines.map((l, i) => i === idx ? { ...l, condition_note: e.target.value } : l) }))}
+                                onChange={(e) => setDraft(d => ({ ...d, lines: d.lines.map((l, i) => i === idx ? { ...l, condition_note: e.target.value } : l) })) }
                                 placeholder="e.g., Box opened but product unused"
                                 className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                               />
@@ -1061,9 +1104,9 @@ export default function MyOrders() {
 
                             {/* Photos */}
                             <div className="md:col-span-2 lg:col-span-4">
-                              <label className="block text-xs font-medium text-gray-600 mb-2">Add photos (optional)</label>
-                              <div className="flex items-center gap-3 flex-wrap">
-                                <label className="inline-flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-colors">
+                              <label className="block text-[11px] sm:text-xs font-medium text-gray-600 mb-2">Add photos (optional)</label>
+                              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                                <label className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-xs sm:text-sm cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-colors">
                                   <ImageIcon className="h-4 w-4 text-gray-600" />
                                   Add images
                                   <input
@@ -1086,8 +1129,8 @@ export default function MyOrders() {
                                 {!!ln.images.length && (
                                   <div className="flex flex-wrap gap-2">
                                     {ln.images.map(f => (
-                                      <div key={f.name} className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white">
-                                        <span className="truncate max-w-[140px]">{f.name}</span>
+                                      <div key={f.name} className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 text-[11px] sm:text-xs bg-white">
+                                        <span className="truncate max-w-[120px] sm:max-w-[160px]">{f.name}</span>
                                         <button
                                           onClick={() => setDraft(d => ({
                                             ...d,
@@ -1110,21 +1153,21 @@ export default function MyOrders() {
                   })}
                 </div>
 
-                <div className="text-xs text-gray-500 mt-3 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                  <div className="font-medium text-blue-900 mb-1">Return Policy</div>
+                <div className="text-[11px] sm:text-xs text-blue-900 mt-2 sm:mt-3 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  <div className="font-medium mb-1">Return Policy</div>
                   <p>Returns are accepted within {RETURN_WINDOW_DAYS} days of delivery. Items should be in original condition with tags attached. Refunds will be processed after quality check.</p>
                 </div>
               </div>
 
               {/* Error / Success */}
               {draft.error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+                <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
                   <div className="font-medium">Unable to process return</div>
                   <div className="mt-1">{draft.error}</div>
                 </div>
               )}
               {draft.successId && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                <div className="p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
                   <div className="font-medium">Return request submitted successfully!</div>
                   <div className="mt-1">We’ve sent a confirmation email with next steps.</div>
                 </div>
@@ -1132,15 +1175,15 @@ export default function MyOrders() {
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t bg-gray-50">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">Need help? Contact our support team for assistance.</div>
-                <div className="flex items-center gap-3">
-                  <ActionButton variant="outline" onClick={() => setDraft(emptyReturnDraft)} disabled={draft.submitting}>
+            <div className="p-4 sm:p-6 border-t bg-gray-50">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 sm:justify-between">
+                <div className="text-xs sm:text-sm text-gray-600">Need help? Contact our support team for assistance.</div>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <ActionButton variant="outline" onClick={() => setDraft(emptyReturnDraft)} disabled={draft.submitting} size="sm">
                     Cancel
                   </ActionButton>
-                  <ActionButton onClick={submitReturn} disabled={!canSubmit} className="min-w-[160px]">
-                    {draft.submitting ? (<><Loader2 className="h-4 w-4 animate-spin" /> Processing…</>) : (<><Check className="h-4 w-4" /> Submit Return Request</>)}
+                  <ActionButton onClick={submitReturn} disabled={!canSubmit} className="min-w-[140px] sm:min-w-[160px]" size="sm">
+                    {draft.submitting ? (<><Loader2 className="h-4 w-4 animate-spin" /> Processing…</>) : (<><Check className="h-4 w-4" /> Submit Return</>)}
                   </ActionButton>
                 </div>
               </div>

@@ -194,19 +194,21 @@ export default function ServicesPageFlip() {
                         </AnimatePresence>
 
                         {/* bottom-right OM watermark */}
-                        <img
-                            src={om}
-                            alt=""
-                            aria-hidden="true"
-                            className="
-      pointer-events-none select-none
-      absolute top-40 -right-3.5
-      w-70 sm:w-70 md:w-70 lg:w-100
-      opacity-100 md:opacity-100
-      mix-blend-multiply
-      [filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.25))]
-    "
-                        />
+                       <img
+  src={om}
+  alt=""
+  aria-hidden="true"
+  className="
+    pointer-events-none select-none
+    hidden md:block               /* <- hide on phones, show from md+ */
+    absolute top-40 -right-3.5
+    w-70 sm:w-70 md:w-70 lg:w-100
+    opacity-100 md:opacity-100
+    mix-blend-multiply
+    [filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.25))]
+  "
+/>
+
                     </div>
                 </div>
                 {/* <div>
