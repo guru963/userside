@@ -24,7 +24,7 @@ const CARDS: Card[] = [
         quote: "Pooja kits & sacred decor, curated with care.",
         description: "Discover a divine collection of authentic Pooja kits, idols, spiritual books, and sacred home decor. Each item is hand-picked to enhance your spiritual practices and bring serenity to your home.",
         image: m1,
-        cta: { label: "Open Store", href: "/store" },
+        cta: { label: "Open Store", href: "/collections" },
     },
     {
         id: "pandit",
@@ -32,7 +32,7 @@ const CARDS: Card[] = [
         quote: "Verified Vedic rituals—at home or temple.",
         description: "Easily book verified Pandits for all your Vedic ceremonies, whether at your home or a temple. Our experienced Pandits ensure authentic rituals, bringing blessings and positive energy to your significant events.",
         image: m2,
-        cta: { label: "Book a Pandit", href: "/book/pandit" },
+        cta: { label: "Book a Pandit", href: "/pandits" },
     },
     {
         id: "astro",
@@ -40,7 +40,7 @@ const CARDS: Card[] = [
         quote: "Personalized muhurat, charts & remedies.",
         description: "Gain deeper insights into your life with personalized astrological readings. Get detailed muhurat calculations, birth charts, and effective remedies from experienced astrologers to navigate your life's journey.",
         image: m3,
-        cta: { label: "Talk to an Astrologer", href: "/astro" },
+        cta: { label: "Talk to an Astrologer", href: "/astrotalk" },
     },
 ];
 

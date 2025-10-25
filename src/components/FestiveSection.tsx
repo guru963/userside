@@ -22,28 +22,28 @@ const TILES: Tile[] = [
     title: "Diwali Pooja Kits",
     desc: "Complete Lakshmi Pooja sets—diya, incense, roli-chawal & more.",
     image: grid1,
-    href: "/collections/pooja-kits",
+    href: "/collections",
   },
   {
     id: "top-right-a",
     title: "Handmade Diyas",
     desc: "Clay diyas to light every corner.",
     image: grid2,
-    href: "/collections/diyas",
+    href: "/collections",
   },
   {
     id: "top-right-b",
     title: "Rangoli Stencils",
     desc: "Intricate patterns in minutes.",
     image: grid3,
-    href: "/collections/rangoli",
+    href: "/collections",
   },
   {
     id: "bottom-right-wide",
     title: "Aakash Kandil & Décor",
     desc: "Lanterns, toran & door décor for a warm festive glow.",
     image: grid4,
-    href: "/collections/lanterns",
+    href: "/collections",
   },
 ];
 
@@ -109,7 +109,7 @@ const FestiveCornerBento: React.FC = () => {
           </p>
 
           <a
-            href="/collections/diwali"
+            href="/collections"
             className="mt-6 px-6 sm:px-8 py-3 rounded-full text-white font-semibold shadow-lg hover:shadow-xl transition bg-gradient-to-r from-[#F53C44] via-[#FA7236] to-[#FA9A3A]"
           >
             View Collections
